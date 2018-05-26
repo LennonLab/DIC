@@ -1,0 +1,58 @@
+---
+title: "Dissolved inorganic carbon (DIC) calculations"
+author: "Jay T. Lennon"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes:
+  - \usepackage{array}
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+Overview: following calculations use DIC concentration and pH to estimate 
+concentrations of CO2, HCO3-, CO3 2-, and alkalinity based on equilibrium constants
+  
+# Setup Work Environment and Load Data
+```{r}
+rm(list=ls())
+getwd()
+setwd("~/GitHub/DIC")
+data <- read.table("DIC_lakes.txt", quote = "", row.names = NULL, sep = "\t", 
+                   stringsAsFactors = FALSE, header = T) 
+```
+
+# Equilbirum constants
+```{r}
+k1 <- 10^-6.3 # H2CO3  =  H+  + HCO3-
+k2 <- 10^-10.3 # HCO3- = H+ + CO32-
+kh <- 10^-1.5 # CO2 (g) + H2O = H2CO3
+```
+
+# Hydrogen and hydroxide concentrations (mol/L)
+```{r}
+H <- 10^-data$pH
+OH <- 0.0000014 - H
+```
+
+# Proportions of DIC classes
+```{r}
+a0 <- 1/(1+(k1/H)+((k1*k2)/data$pH^2)) # CO2
+a1 <- 1/((H/k1)+1+(k2/H)) # HCO3-
+a2 <-1/((H^2/(k1*k2))+1+(H/k2)) # CO3 2-
+```
+
+# Concentrations of DIC classes
+```{r}
+CO2 <- data$DIC * a0
+HCO3 <- data$DIC * a1
+CO32 <- data$DIC * a2
+```
+
+# Alkalinity
+```{r}
+Alk <- (data$DIC*(a1+2*a2)) + (OH - H)
+```
+
+# Summary
+```{r}
+summary <- data.frame(data, CO2, HCO3, CO32, Alk)
+```
